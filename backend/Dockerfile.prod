@@ -1,0 +1,52 @@
+FROM php:8.2-fpm
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    libfreetype6-dev \
+    libjpeg62-turbo-dev \
+    sqlite3 \
+    libsqlite3-dev \
+    fonts-dejavu \
+    fontconfig \
+    libxrender1 \
+    xfonts-75dpi \
+    xfonts-base \
+    wget \
+    git \
+    unzip \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd zip mbstring pdo pdo_sqlite opcache
+
+# Install wkhtmltopdf manually (Debian Bookworm/Bullseye compatible)
+# Using the bullseye package as it is often compatible or look for bookworm specific if available. 
+# For php:8.2 which is based on bookworm usually, we might need a specific handling.
+# Let's try to install from deb strictly.
+RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.bullseye_amd64.deb \
+    && apt-get install -y ./wkhtmltox_0.12.6.1-2.bullseye_amd64.deb \
+    && rm wkhtmltox_0.12.6.1-2.bullseye_amd64.deb \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /var/www/html
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Copy application code
+COPY . /var/www/html
+
+# Ensure writable directories
+RUN mkdir -p /var/www/html/storage/uploads /var/www/html/storage/results \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 /var/www/html/storage
+
+# Ensure entrypoint is executable
+RUN chmod +x /var/www/html/entrypoint.prod.sh
+
+EXPOSE 9000
+
+ENTRYPOINT ["/var/www/html/entrypoint.prod.sh"]
+CMD ["php-fpm", "-F"]
