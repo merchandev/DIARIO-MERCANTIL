@@ -457,7 +457,7 @@ export default function PublicacionDetalle() {
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-lg text-emerald-900">Pago reportado</h3>
             <span className="text-xs px-2 py-1 rounded-full bg-white text-emerald-800 border border-emerald-200">
-              {latestPayment ? 'Pendiente de verificaciÇün' : 'AÇ¼n no reportado'}
+              {latestPayment ? 'Pendiente de verificación' : 'Aún no reportado'}
             </span>
           </div>
           {latestPayment ? (
