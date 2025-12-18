@@ -27,6 +27,7 @@ const DirectorioLegal = lazy(() => import('./pages/DirectorioLegal'))
 const Usuarios = lazy(() => import('./pages/Usuarios'))
 const Configuracion = lazy(() => import('./pages/Configuracion'))
 const Paginas = lazy(() => import('./pages/Paginas'))
+const FileManager = lazy(() => import('./pages/FileManager'))
 
 // Public pages - lazy loaded
 const PublicView = lazy(() => import('./pages/PublicView'))
@@ -123,6 +124,7 @@ export default function App() {
                     <Route path="historial" element={<LazyRoute><Historial /></LazyRoute>} />
                     <Route path="cotizador" element={<LazyRoute><Cotizador /></LazyRoute>} />
                     <Route path="usuarios" element={<RequireAdmin><LazyRoute><Usuarios /></LazyRoute></RequireAdmin>} />
+                    <Route path="archivos" element={<RequireAdmin><LazyRoute><FileManager /></LazyRoute></RequireAdmin>} />
                     <Route path="configuracion" element={<RequireAdmin><LazyRoute><Configuracion /></LazyRoute></RequireAdmin>} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
