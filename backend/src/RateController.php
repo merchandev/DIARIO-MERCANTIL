@@ -21,12 +21,14 @@ class RateController {
     $force = isset($_GET['force']) && $_GET['force'] === '1';
     $data = BcvScraper::getRates($force);
 
-    // Optional fallback provider when BCV markup doesn't expose numbers (enabled via env)
-    $useFallback = getenv('BCV_FALLBACK') === '1';
+    // Optional fallback provider when BCV markup doesn't expose numbers
+    // Enabled by default unless BCV_FALLBACK=0
+    $useFallback = getenv('BCV_FALLBACK') !== '0';
     if ($useFallback) {
       $needUsd = empty($data['rates']['USD']['value']);
       $needEur = empty($data['rates']['EUR']['value']);
       if ($needUsd || $needEur) {
+        error_log('[RateController] ⚠️ BCV scrape incomplete, attempting fallback. Info: ' . json_encode($data['error'] ?? 'missing_values'));
         try {
           $fb = $this->fallbackRates();
           if ($needUsd && isset($fb['USD'])) {
@@ -37,7 +39,7 @@ class RateController {
           }
           if (!empty($fb['source'])) { $data['source_url'] = $fb['source']; }
         } catch (Throwable $e) {
-          // ignore fallback error
+          error_log('[RateController] ❌ Fallback failed: ' . $e->getMessage());
         }
       }
     }
