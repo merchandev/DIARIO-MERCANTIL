@@ -95,9 +95,9 @@ class LegalController {
           ->execute([$reqId,'document_pdf',$fileId,$now]);
 
       // Compute pricing summary
-      $priceUsd = (float)($pdo->query("SELECT value FROM settings WHERE key='price_per_folio_usd'")->fetchColumn() ?: 1.5);
-      $bcv = (float)($pdo->query("SELECT value FROM settings WHERE key='bcv_rate'")->fetchColumn() ?: 36.0);
-      $iva = (float)($pdo->query("SELECT value FROM settings WHERE key='iva_percent'")->fetchColumn() ?: 16);
+      $priceUsd = (float)($pdo->query("SELECT value FROM settings WHERE `key`='price_per_folio_usd'")->fetchColumn() ?: 1.5);
+      $bcv = (float)($pdo->query("SELECT value FROM settings WHERE `key`='bcv_rate'")->fetchColumn() ?: 36.0);
+      $iva = (float)($pdo->query("SELECT value FROM settings WHERE `key`='iva_percent'")->fetchColumn() ?: 16);
       
       $unitBs = round($priceUsd * $bcv, 2);
       $sub = round($unitBs * $folios, 2);
@@ -543,19 +543,19 @@ class LegalController {
 
     // Pricing settings
     if ($pubType === 'Convocatoria') {
-      $pr = $pdo->prepare("SELECT value FROM settings WHERE key='convocatoria_usd'");
+      $pr = $pdo->prepare("SELECT value FROM settings WHERE `key`='convocatoria_usd'");
       $pr->execute();
       $priceUsd = (float)($pr->fetchColumn() ?: 0);
       $folios = 1; // Convocatoria se cobra como 1 folio
     } else {
-      $priceRow = $pdo->prepare("SELECT value FROM settings WHERE key='price_per_folio_usd'");
+      $priceRow = $pdo->prepare("SELECT value FROM settings WHERE `key`='price_per_folio_usd'");
       $priceRow->execute();
       $priceUsd = (float)($priceRow->fetchColumn() ?: 0);
     }
-    $bcvRow = $pdo->prepare("SELECT value FROM settings WHERE key='bcv_rate'");
+    $bcvRow = $pdo->prepare("SELECT value FROM settings WHERE `key`='bcv_rate'");
     $bcvRow->execute();
     $bcv = (float)($bcvRow->fetchColumn() ?: 0);
-    $ivaRow = $pdo->prepare("SELECT value FROM settings WHERE key='iva_percent'");
+    $ivaRow = $pdo->prepare("SELECT value FROM settings WHERE `key`='iva_percent'");
     $ivaRow->execute();
     $iva = (float)($ivaRow->fetchColumn() ?: 16);
 
