@@ -79,16 +79,57 @@ class LegalController {
         throw new Exception('No se pudieron detectar páginas en el PDF. Verifique que el archivo no esté corrupto.');
       }
 
-      // Current user becomes requester defaults
+      // Current user
       $u = AuthController::userFromToken(AuthController::bearerToken());
-      $reqName = $u['name'] ?? '';
-      $reqDocument = $u['document'] ?? '';
-      $today = gmdate('Y-m-d');
+      $userId = $u ? (int)$u['id'] : null;
 
-      // Create legal request with Por verificar status and pub_type Documento
-      $ins = $pdo->prepare("INSERT INTO legal_requests(status,name,document,date,folios,pub_type,user_id,created_at) VALUES(?,?,?,?,?,?,?,?)");
-      $ins->execute(['Por verificar',$reqName,$reqDocument,$today,$folios,'Documento', ($u['id'] ?? null), $now]);
-      $reqId = (int)$pdo->lastInsertId();
+      // START CHANGE: Check if we are attaching to an existing request or creating a new one
+      $reqId = null;
+      if (isset($_POST['legal_request_id']) && is_numeric($_POST['legal_request_id'])) {
+        $reqId = (int)$_POST['legal_request_id'];
+        // Verify ownership and existence
+        $check = $pdo->prepare('SELECT id, user_id FROM legal_requests WHERE id=?');
+        $check->execute([$reqId]);
+        $existing = $check->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$existing) {
+          throw new Exception('La solicitud especificada no existe');
+        }
+        
+        // Ensure user owns this request (or is admin, but for this flow it's usually the applicant)
+        // If user is admin/staff they might be editing someone else's, so we might relax this or check role. 
+        // For simplicity in this user flow: strict ownership if not staff.
+        $role = strtolower($u['role'] ?? '');
+        $isStaff = in_array($role, ['admin', 'administrador', 'superadmin', 'staff', 'manager']);
+        
+        if (!$isStaff && $existing['user_id'] != $userId) {
+           throw new Exception('No tiene permiso para modificar esta solicitud');
+        }
+
+        // Update folios on existing request
+        $pdo->prepare('UPDATE legal_requests SET folios=?, updated_at=? WHERE id=?')
+            ->execute([$folios, $now, $reqId]);
+            
+        // Clean up old document_pdf files for this request to avoid duplicates? 
+        // Optional. For now let's just add the new one. The latest one is usually picked.
+        // Or better: mark old ones as replaced? Let's simply add the new file link.
+
+      } else {
+        // Create NEW legal request defaults
+        $reqName = $u['name'] ?? '';
+        $reqDocument = $u['document'] ?? '';
+        $today = gmdate('Y-m-d');
+
+        // Create legal request with Por verificar status and pub_type Documento
+        $ins = $pdo->prepare("INSERT INTO legal_requests(status,name,document,date,folios,pub_type,user_id,created_at) VALUES(?,?,?,?,?,?,?,?)");
+        $ins->execute(['Borrador',$reqName,$reqDocument,$today,$folios,'Documento', $userId, $now]);
+        // Changed status to Borrador initially until they submit the full form in next steps, 
+        // to avoid "Por verificar" items with missing data if they abandon.
+        // However, original code said 'Por verificar'. The user complained about duplicates. 
+        // If the frontend does Step 1 (Create Draft) -> Step 2 (Upload), we should reuse. 
+        // If we create here, we return ID.
+        $reqId = (int)$pdo->lastInsertId();
+      }
 
       // Attach uploaded PDF to request
       $pdo->prepare('INSERT INTO legal_files(legal_request_id,kind,file_id,created_at) VALUES(?,?,?,?)')

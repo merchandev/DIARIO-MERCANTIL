@@ -5,11 +5,11 @@ import ProtectedPdfViewer from '../components/ProtectedPdfViewer'
 import { IconTrash, IconDownload, IconSave, IconClose, IconPlus, IconArrowLeft, IconQrCode } from '../components/icons'
 import QRCodeModal from '../components/QRCodeModal'
 
-export default function PublicacionDetalle(){
+export default function PublicacionDetalle() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
-  const [item, setItem] = useState<LegalRequest|null>(null)
+  const [item, setItem] = useState<LegalRequest | null>(null)
   const [payments, setPayments] = useState<LegalPayment[]>([])
   const [files, setFiles] = useState<LegalFile[]>([])
   const [saving, setSaving] = useState(false)
@@ -17,20 +17,20 @@ export default function PublicacionDetalle(){
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false)
   const [currentPdfUrl, setCurrentPdfUrl] = useState<string>('')
   const [currentPdfName, setCurrentPdfName] = useState<string>('')
-  const [qrModal, setQrModal] = useState<{isOpen:boolean; url:string; title:string}>({isOpen:false, url:'', title:''})
+  const [qrModal, setQrModal] = useState<{ isOpen: boolean; url: string; title: string }>({ isOpen: false, url: '', title: '' })
 
-  useEffect(()=>{
+  useEffect(() => {
     if (!id) return
     loadData()
   }, [id])
 
-  const loadData = async()=>{
+  const loadData = async () => {
     setLoading(true)
     try {
       const d = await getLegal(Number(id))
       setItem(d.item)
       setPayments(d.payments)
-      
+
       // Parse metadata
       if (d.item.meta) {
         try {
@@ -51,7 +51,7 @@ export default function PublicacionDetalle(){
     }
   }
 
-  const onSave = async()=>{
+  const onSave = async () => {
     if (!item) return
     setSaving(true)
     try {
@@ -77,7 +77,7 @@ export default function PublicacionDetalle(){
     }
   }
 
-  const onReject = async()=>{
+  const onReject = async () => {
     if (!item) return
     const reason = prompt('Motivo del rechazo:')
     if (reason === null) return
@@ -91,7 +91,7 @@ export default function PublicacionDetalle(){
     }
   }
 
-  const onApprove = async()=>{
+  const onApprove = async () => {
     if (!item) return
     if (!confirm('¿Aprobar esta solicitud y marcarla como Publicada?')) return
     try {
@@ -107,7 +107,7 @@ export default function PublicacionDetalle(){
     }
   }
 
-  const onAddPayment = async(e: React.FormEvent)=>{
+  const onAddPayment = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!item) return
     const form = e.target as HTMLFormElement
@@ -132,7 +132,7 @@ export default function PublicacionDetalle(){
     }
   }
 
-  const onDeletePayment = async(paymentId: number)=>{
+  const onDeletePayment = async (paymentId: number) => {
     if (!item) return
     if (!confirm('¿Eliminar este pago?')) return
     try {
@@ -145,7 +145,7 @@ export default function PublicacionDetalle(){
     }
   }
 
-  const download = async()=>{
+  const download = async () => {
     if (!item) return
     try {
       const blob = await downloadLegal(item.id)
@@ -205,7 +205,7 @@ export default function PublicacionDetalle(){
 
   return (
     <section className="space-y-4">
-        <QRCodeModal {...qrModal} onClose={()=> setQrModal({isOpen:false, url:'', title:''})} />
+      <QRCodeModal {...qrModal} onClose={() => setQrModal({ isOpen: false, url: '', title: '' })} />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button className="btn" onClick={() => navigate('/dashboard/publicaciones')}>
@@ -214,11 +214,11 @@ export default function PublicacionDetalle(){
           <h1 className="text-xl font-semibold">Orden de servicio #{item.order_no || item.id}</h1>
         </div>
         <div className="flex gap-2">
-                    {item.status === 'Publicada' && (
-                      <button className="btn" onClick={()=>setQrModal({isOpen:true, url:`${window.location.origin}/ediciones/${item.order_no || item.id}`, title:`Publicación ${item.order_no || item.id}`})}>
-                        <IconQrCode /> Código QR
-                      </button>
-                    )}
+          {item.status === 'Publicada' && (
+            <button className="btn" onClick={() => setQrModal({ isOpen: true, url: `${window.location.origin}/ediciones/${item.order_no || item.id}`, title: `Publicación ${item.order_no || item.id}` })}>
+              <IconQrCode /> Código QR
+            </button>
+          )}
           <button className="btn" onClick={download}>
             <IconDownload /> Descargar PDF
           </button>
@@ -247,7 +247,7 @@ export default function PublicacionDetalle(){
         {/* Column 1: Basic Info */}
         <div className="card p-4 space-y-4 lg:col-span-2">
           <h3 className="font-semibold text-lg border-b pb-2">Información Básica</h3>
-          
+
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">N° de Orden</label>
             <input
@@ -313,7 +313,7 @@ export default function PublicacionDetalle(){
         {/* Column 2: Solicitante Info */}
         <div className="card p-4 space-y-4">
           <h3 className="font-semibold text-lg border-b pb-2">Datos del Solicitante</h3>
-          
+
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Razón Social / Nombre</label>
             <input
@@ -376,7 +376,7 @@ export default function PublicacionDetalle(){
         {/* Column 3: Metadata */}
         <div className="card p-4 space-y-4">
           <h3 className="font-semibold text-lg border-b pb-2">Información Adicional</h3>
-          
+
           {meta.tipo_sociedad && (
             <div>
               <span className="text-sm font-medium text-slate-700">Tipo de Sociedad:</span>
@@ -466,9 +466,12 @@ export default function PublicacionDetalle(){
               <div className="flex justify-between"><span className="font-medium">Fecha:</span><span>{prettyDate(latestPayment.date)}</span></div>
               <div className="flex justify-between"><span className="font-medium">Banco:</span><span>{latestPayment.bank}</span></div>
               <div className="flex justify-between"><span className="font-medium">Tipo:</span><span>{latestPayment.type}</span></div>
-              <div className="flex justify-between"><span className="font-medium">Monto:</span><span className="font-mono">{Number(latestPayment.amount_bs||0).toLocaleString('es-VE',{minimumFractionDigits:2, maximumFractionDigits:2})} Bs.</span></div>
+              <div className="flex justify-between"><span className="font-medium">Monto:</span><span className="font-mono">{Number(latestPayment.amount_bs || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.</span></div>
+              {latestPayment.mobile_phone && (
+                <div className="flex justify-between"><span className="font-medium">Telf. Pago Móvil:</span><span>{latestPayment.mobile_phone}</span></div>
+              )}
               <div className="flex justify-between"><span className="font-medium">Estado:</span>
-                <span className={`px-2 py-1 rounded text-xs ${latestPayment.status==='Verificado' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                <span className={`px-2 py-1 rounded text-xs ${latestPayment.status === 'Verificado' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
                   {latestPayment.status}
                 </span>
               </div>
@@ -487,82 +490,31 @@ export default function PublicacionDetalle(){
           </div>
         </div>
       </div>
-
-      {/* Payments Section */}
-      <div className="card p-4 space-y-4">
-        <h3 className="font-semibold text-lg">Historial de Pagos</h3>
-        
-        <div className="overflow-auto">
-          <table className="min-w-full text-sm border">
-            <thead>
-              <tr className="bg-slate-100">
-                <th className="text-left px-3 py-2">Referencia</th>
-                <th className="text-left px-3 py-2">Fecha</th>
-                <th className="text-left px-3 py-2">Banco</th>
-                <th className="text-left px-3 py-2">Tipo</th>
-                <th className="text-right px-3 py-2">Monto (Bs.)</th>
-                <th className="text-left px-3 py-2">Estado</th>
-                <th className="text-left px-3 py-2">Comentario</th>
-                <th className="text-center px-3 py-2">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payments.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="text-center py-4 text-slate-500">
-                    No se ha reportado ningún pago
-                  </td>
-                </tr>
-              )}
-              {payments.map(p => (
-                <tr key={p.id} className="border-t hover:bg-slate-50">
-                  <td className="px-3 py-2">{p.ref}</td>
-                  <td className="px-3 py-2">{prettyDate(p.date)}</td>
-                  <td className="px-3 py-2">{p.bank}</td>
-                  <td className="px-3 py-2">{p.type}</td>
-                  <td className="px-3 py-2 text-right font-mono">
-                    {Number(p.amount_bs).toLocaleString('es-VE', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2
-                    })}
-                  </td>
-                  <td className="px-3 py-2">
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      p.status === 'Verificado' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      {p.status}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">{p.comment || '-'}</td>
-                  <td className="px-3 py-2 text-center">
-                    <button
-                      className="text-rose-600 hover:text-rose-800"
-                      onClick={() => onDeletePayment(p.id)}
-                      title="Eliminar pago"
                     >
-                      <IconTrash />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="border-t-2 bg-slate-50 font-semibold">
-                <td colSpan={4} className="px-3 py-2 text-right">Total pagado:</td>
-                <td className="px-3 py-2 text-right font-mono text-lg">
-                  {totalPaid.toLocaleString('es-VE', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                  })} Bs.
-                </td>
-                <td colSpan={3}></td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+      <IconTrash />
+    </button>
+                  </td >
+                </tr >
+              ))
+}
+            </tbody >
+  <tfoot>
+    <tr className="border-t-2 bg-slate-50 font-semibold">
+      <td colSpan={4} className="px-3 py-2 text-right">Total pagado:</td>
+      <td className="px-3 py-2 text-right font-mono text-lg">
+        {totalPaid.toLocaleString('es-VE', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })} Bs.
+      </td>
+      <td colSpan={3}></td>
+    </tr>
+  </tfoot>
+          </table >
+        </div >
 
-        {/* Add Payment Form */}
-        <form onSubmit={onAddPayment} className="border-t pt-4">
+  {/* Add Payment Form */ }
+  < form onSubmit = { onAddPayment } className = "border-t pt-4" >
           <h4 className="font-medium mb-3">Agregar Nuevo Pago</h4>
           <div className="grid md:grid-cols-4 gap-3">
             <input className="input" name="ref" placeholder="Referencia" required />
@@ -596,72 +548,76 @@ export default function PublicacionDetalle(){
           <button className="btn btn-primary mt-3">
             <IconPlus /> Agregar Pago
           </button>
-        </form>
-      </div>
+        </form >
+      </div >
 
-      {/* Files Section */}
-      {files.length > 0 && (
-        <div className="card p-4 space-y-3">
-          <h3 className="font-semibold text-lg">Archivos Adjuntos</h3>
-          <div className="grid md:grid-cols-2 gap-2">
-            {files.map(f => (
-              <div key={f.id} className="border rounded p-3 flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="font-medium">{f.name}</p>
-                  <p className="text-sm text-slate-500">{f.kind} • {(f.size / 1024).toFixed(1)} KB</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {f.type === 'pdf' && (
-                    <button
-                      onClick={() => openPdfViewer(f.file_id, f.name)}
-                      className="text-blue-600 hover:text-blue-800 inline-flex items-center gap-1"
-                      title="Ver PDF"
-                    >
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                      </svg>
-                    </button>
-                  )}
-                  <a
-                    href={`/api/uploads/${f.file_id}`}
-                    download={f.name}
-                    className="text-brand-600 hover:text-brand-800"
-                    title="Descargar"
-                  >
-                    <IconDownload />
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* PDF Viewer Modal */}
-      {pdfViewerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="font-semibold text-lg truncate flex-1">{currentPdfName}</h3>
-              <div className="flex items-center gap-2">
-                {/* Descarga disponible para administradores desde la lista, no en el visor */}
+  {/* Files Section */ }
+{
+  files.length > 0 && (
+    <div className="card p-4 space-y-3">
+      <h3 className="font-semibold text-lg">Archivos Adjuntos</h3>
+      <div className="grid md:grid-cols-2 gap-2">
+        {files.map(f => (
+          <div key={f.id} className="border rounded p-3 flex items-center justify-between">
+            <div className="flex-1">
+              <p className="font-medium">{f.name}</p>
+              <p className="text-sm text-slate-500">{f.kind} • {(f.size / 1024).toFixed(1)} KB</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {f.type === 'pdf' && (
                 <button
-                  onClick={closePdfViewer}
-                  className="btn bg-slate-200 hover:bg-slate-300"
+                  onClick={() => openPdfViewer(f.file_id, f.name)}
+                  className="text-blue-600 hover:text-blue-800 inline-flex items-center gap-1"
+                  title="Ver PDF"
                 >
-                  <IconClose /> Cerrar
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                  </svg>
                 </button>
-              </div>
-            </div>
-            
-            {/* PDF Viewer protegido */}
-            <div className="flex-1 overflow-hidden">
-              <ProtectedPdfViewer src={currentPdfUrl} watermark={`Orden ${item.order_no || item.id} - Solo Lectura`} />
+              )}
+              <a
+                href={`/api/uploads/${f.file_id}`}
+                download={f.name}
+                className="text-brand-600 hover:text-brand-800"
+                title="Descargar"
+              >
+                <IconDownload />
+              </a>
             </div>
           </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+{/* PDF Viewer Modal */ }
+{
+  pdfViewerOpen && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
+      <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b">
+          <h3 className="font-semibold text-lg truncate flex-1">{currentPdfName}</h3>
+          <div className="flex items-center gap-2">
+            {/* Descarga disponible para administradores desde la lista, no en el visor */}
+            <button
+              onClick={closePdfViewer}
+              className="btn bg-slate-200 hover:bg-slate-300"
+            >
+              <IconClose /> Cerrar
+            </button>
+          </div>
         </div>
-      )}
-    </section>
+
+        {/* PDF Viewer protegido */}
+        <div className="flex-1 overflow-hidden">
+          <ProtectedPdfViewer src={currentPdfUrl} watermark={`Orden ${item.order_no || item.id} - Solo Lectura`} />
+        </div>
+      </div>
+    </div>
+  )
+}
+    </section >
   )
 }
