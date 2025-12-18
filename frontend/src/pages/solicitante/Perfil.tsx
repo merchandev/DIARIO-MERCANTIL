@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { IconUser, IconMail, IconPhone, IconIdCard, IconSave, IconCamera } from '../../components/icons'
+import { IconUser, IconMail, IconPhone, IconIdCard, IconSave, IconCamera, IconUserCircle } from '../../components/icons'
 import { fetchAuth } from '../../lib/api'
 
 interface UserProfile {
@@ -88,7 +88,7 @@ export default function Perfil() {
       if (avatarFile) {
         const formData = new FormData()
         formData.append('avatar', avatarFile)
-        
+
         const avatarRes = await fetchAuth('/api/user/avatar', {
           method: 'POST',
           body: formData
@@ -102,6 +102,7 @@ export default function Perfil() {
       setMessage({ type: 'success', text: 'Perfil actualizado exitosamente' })
       await loadProfile()
       setAvatarFile(null)
+      window.dispatchEvent(new Event('user_updated'))
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Error al actualizar perfil' })
     } finally {
@@ -127,11 +128,10 @@ export default function Perfil() {
 
       {/* Message */}
       {message && (
-        <div className={`p-4 rounded-lg ${
-          message.type === 'success' 
-            ? 'bg-green-50 border border-green-200 text-green-700' 
+        <div className={`p-4 rounded-lg ${message.type === 'success'
+            ? 'bg-green-50 border border-green-200 text-green-700'
             : 'bg-red-50 border border-red-200 text-red-700'
-        }`}>
+          }`}>
           {message.text}
         </div>
       )}
@@ -142,11 +142,11 @@ export default function Perfil() {
           <h2 className="text-lg font-semibold text-slate-800 mb-4">Foto de Perfil</h2>
           <div className="flex items-center gap-6">
             <div className="relative">
-              <div className="w-32 h-32 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center">
+              <div className="w-32 h-32 rounded-full bg-slate-400 overflow-hidden flex items-center justify-center">
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <IconUser className="w-16 h-16 text-slate-400" />
+                  <IconUserCircle className="w-20 h-20 text-slate-600" />
                 )}
               </div>
               <label className="absolute bottom-0 right-0 w-10 h-10 bg-brand-600 text-white rounded-full flex items-center justify-center cursor-pointer hover:bg-brand-700 transition shadow-lg">

@@ -58,7 +58,7 @@ export async function login(body: { document: string; password: string }) {
 
 export async function me() {
   const res = await fetchAuth('/api/auth/me')
-  return res.json() as Promise<{ user: { id: number; document: string; name: string; role: string } }>
+  return res.json() as Promise<{ user: { id: number; document: string; name: string; role: string; avatar_url?: string | null } }>
 }
 
 export async function logout() {
