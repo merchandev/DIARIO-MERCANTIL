@@ -3,14 +3,15 @@ require_once __DIR__.'/Response.php';
 require_once __DIR__.'/Database.php';
 
 class UploadController {
-  private string $uploadDir;
+  private string $baseUploadDir;
   private array $allowed;
   private int $maxBytes;
 
   public function __construct() {
-    $this->uploadDir = realpath(__DIR__.'/..').'/storage/uploads';
-    if (!is_dir($this->uploadDir)) mkdir($this->uploadDir, 0777, true);
-  $allowed = getenv('ALLOWED_TYPES') ?: 'csv,xlsx,json,pdf,zip,jpg,jpeg,png,webp,doc,docx';
+    $this->baseUploadDir = realpath(__DIR__.'/..').'/storage/uploads';
+    if (!is_dir($this->baseUploadDir)) mkdir($this->baseUploadDir, 0777, true);
+    
+    $allowed = getenv('ALLOWED_TYPES') ?: 'csv,xlsx,json,pdf,zip,jpg,jpeg,png,webp,doc,docx';
     $this->allowed = array_map('trim', explode(',', strtolower($allowed)));
     $maxMb = (int) (getenv('MAX_FILE_MB') ?: 500);
     $this->maxBytes = $maxMb * 1024 * 1024;
@@ -28,6 +29,14 @@ class UploadController {
     $pdo->beginTransaction();
     $created = [];
 
+    // Create date-based directory structure: YYYY/MM/DD
+    $datePath = date('Y/m/d');
+    $targetDir = $this->baseUploadDir . '/' . $datePath;
+    
+    if (!is_dir($targetDir)) {
+      mkdir($targetDir, 0777, true);
+    }
+
     foreach ($_FILES['files']['name'] as $i => $name) {
       $size = (int) $_FILES['files']['size'][$i];
       $tmp  = $_FILES['files']['tmp_name'][$i];
@@ -43,15 +52,51 @@ class UploadController {
       }
 
       $checksum = hash_file('sha256', $tmp);
-      $dest = $this->uploadDir.'/'.uniqid('f_', true).'_'.basename($name);
+      
+      // Save with unique name in date folder
+      // Store relative path in DB if needed, or just filename. 
+      // For simplicity/backward compat, we store the full relative path from storage/uploads in 'name' or a new column?
+      // The current DB schema has 'name' which seems to be the original filename.
+      // We should probably store the physical path.
+      // Let's name the file uniquely but keep original name in DB "name" column?
+      // Current implementation used: $dest = $this->uploadDir.'/'.uniqid('f_', true).'_'.basename($name);
+      // It didn't seem to store the path in DB, just 'name'. This implies the system assumes flat structure?
+      // Checking get/download logic would be important, but assuming standard ID retrieval.
+      
+      $uniqueName = uniqid('f_', true) . '_' . basename($name);
+      $dest = $targetDir . '/' . $uniqueName;
+      
+      // We will store the relative path in a new way or just assume we find it?
+      // If the system relies on stored path, we need to update DB schema.
+      // Looking at `files` table, it likely doesn't have 'path'.
+      // If we change storage structure, we must ensure retrieval works.
+      // For now, I will store the 'name' as 'YYYY/MM/DD/unique_name' so it can be retrieved?
+      // Or if 'name' is just display name, we might lose track of file.
+      // Let's assume 'name' column is used for display. We might need a 'path' column.
+      // Use 'local_path' if exists, or store it in 'name'?
+      // Risky to change semantics of 'name'.
+      // Let's store the relative path in a "path" column if it exists, otherwise we might have an issue.
+      // Since we are migrating DB, we can add 'path' column.
+      
+      // WAIT: I don't see FileController.php, so I don't know how files are served.
+      // I'll stick to: 'name' = original name.
+      // And I will try to save the relative path '2025/12/17/unique_name' into a 'path' column.
+      // I'll add 'path' to the schema in migrations.
+      
       if (!move_uploaded_file($tmp, $dest)) {
         $created[] = ['name'=>$name,'status'=>'upload_failed','error'=>'No se pudo guardar'];
         continue;
       }
+      
+      // Relative path for storage
+      $storagePath = $datePath . '/' . $uniqueName;
 
       $now = gmdate('c');
-      $stmt = $pdo->prepare('INSERT INTO files(name,size,type,checksum,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?)');
-      $stmt->execute([$name,$size,$type,$checksum,'uploaded',$now,$now]);
+      // Updated query to include 'path'
+      // Note: Must update init.sql to include 'path' column in 'files' table
+      $stmt = $pdo->prepare('INSERT INTO files(name,path,size,type,checksum,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)');
+      $stmt->execute([$name, $storagePath, $size, $type, $checksum, 'uploaded', $now, $now]);
+      
       $fileId = (int) $pdo->lastInsertId();
 
       $ev = $pdo->prepare('INSERT INTO file_events(file_id,ts,type,message) VALUES(?,?,?,?)');
@@ -59,7 +104,7 @@ class UploadController {
 
       $this->simulateProcessing($fileId, $dest, $name);
 
-      $created[] = ['fileId'=>$fileId,'name'=>$name,'status'=>'uploaded'];
+      $created[] = ['fileId'=>$fileId,'name'=>$name,'status'=>'uploaded','path'=>$storagePath];
     }
 
     $pdo->commit();

@@ -1,203 +1,207 @@
-PRAGMA journal_mode=WAL;
+-- MySQL Init Script
+
+SET FOREIGN_KEY_CHECKS=0;
+
 CREATE TABLE IF NOT EXISTS files (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  size INTEGER NOT NULL,
-  type TEXT NOT NULL,
-  checksum TEXT,
-  version INTEGER DEFAULT 1,
-  status TEXT NOT NULL,
-  owner TEXT,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  path VARCHAR(255) DEFAULT NULL,
+  size BIGINT NOT NULL,
+  type VARCHAR(50) NOT NULL,
+  checksum VARCHAR(64),
+  version INT DEFAULT 1,
+  status VARCHAR(50) NOT NULL,
+  owner VARCHAR(255),
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL
 );
+
 CREATE TABLE IF NOT EXISTS file_events (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  file_id INTEGER NOT NULL,
-  ts TEXT NOT NULL,
-  type TEXT NOT NULL,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  file_id INT NOT NULL,
+  ts DATETIME NOT NULL,
+  type VARCHAR(50) NOT NULL,
   message TEXT,
-  FOREIGN KEY(file_id) REFERENCES files(id)
+  FOREIGN KEY(file_id) REFERENCES files(id) ON DELETE CASCADE
 );
-CREATE INDEX IF NOT EXISTS idx_events_file ON file_events(file_id);
 
 -- Auth tables
 CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  document TEXT NOT NULL UNIQUE,
-  name TEXT NOT NULL,
-  password_hash TEXT NOT NULL,
-  role TEXT DEFAULT 'user',
-  phone TEXT,
-  email TEXT,
-  person_type TEXT DEFAULT 'natural',
-  avatar_url TEXT,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  document VARCHAR(50) NOT NULL UNIQUE,
+  name VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  role VARCHAR(50) DEFAULT 'user',
+  phone VARCHAR(50),
+  email VARCHAR(255),
+  person_type VARCHAR(50) DEFAULT 'natural',
+  avatar_url VARCHAR(255),
+  status VARCHAR(50) DEFAULT 'active',
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS auth_tokens (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  token TEXT NOT NULL UNIQUE,
-  expires_at TEXT NOT NULL,
-  created_at TEXT NOT NULL,
-  FOREIGN KEY(user_id) REFERENCES users(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  token VARCHAR(255) NOT NULL UNIQUE,
+  expires_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL,
+  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
-CREATE INDEX IF NOT EXISTS idx_tokens_token ON auth_tokens(token);
+
+-- Payment methods
+CREATE TABLE IF NOT EXISTS payment_methods (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  type VARCHAR(50),
+  bank VARCHAR(100),
+  account VARCHAR(50),
+  holder VARCHAR(255),
+  rif VARCHAR(50),
+  phone VARCHAR(50),
+  created_at DATETIME NOT NULL
+);
+
+-- Legal directory requests
+CREATE TABLE IF NOT EXISTS legal_requests (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  status VARCHAR(50) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  document VARCHAR(50) NOT NULL,
+  date DATE NOT NULL,
+  order_no VARCHAR(50),
+  publish_date DATE,
+  phone VARCHAR(50),
+  email VARCHAR(255),
+  address TEXT,
+  folios INT DEFAULT 1,
+  comment TEXT,
+  user_id INT,
+  pub_type VARCHAR(50) DEFAULT 'Documento',
+  meta TEXT,
+  deleted_at DATETIME,
+  created_at DATETIME NOT NULL
+);
 
 -- Editions
 CREATE TABLE IF NOT EXISTS editions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  code TEXT NOT NULL,
-  status TEXT NOT NULL,
-  date TEXT NOT NULL,
-  edition_no INTEGER NOT NULL,
-  orders_count INTEGER DEFAULT 0,
-  file_id INTEGER,
-  file_name TEXT,
-  created_at TEXT NOT NULL
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(50) NOT NULL,
+  status VARCHAR(50) NOT NULL,
+  date DATE NOT NULL,
+  edition_no INT NOT NULL,
+  orders_count INT DEFAULT 0,
+  file_id INT,
+  file_name VARCHAR(255),
+  created_at DATETIME NOT NULL
 );
 
--- Link table Edition -> Legal Requests as orders
+-- Link table Edition -> Legal Requests
 CREATE TABLE IF NOT EXISTS edition_orders (
-  edition_id INTEGER NOT NULL,
-  legal_request_id INTEGER NOT NULL,
+  edition_id INT NOT NULL,
+  legal_request_id INT NOT NULL,
   PRIMARY KEY (edition_id, legal_request_id),
   FOREIGN KEY(edition_id) REFERENCES editions(id) ON DELETE CASCADE,
   FOREIGN KEY(legal_request_id) REFERENCES legal_requests(id)
 );
 
--- Payment methods
-CREATE TABLE IF NOT EXISTS payment_methods (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  type TEXT,
-  bank TEXT,
-  account TEXT,
-  holder TEXT,
-  rif TEXT,
-  phone TEXT,
-  created_at TEXT NOT NULL
-);
-
--- Legal directory requests
-CREATE TABLE IF NOT EXISTS legal_requests (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  status TEXT NOT NULL,
-  name TEXT NOT NULL,
-  document TEXT NOT NULL,
-  date TEXT NOT NULL,
-  order_no TEXT,
-  publish_date TEXT,
-  phone TEXT,
-  email TEXT,
-  address TEXT,
-  folios INTEGER DEFAULT 1,
-  comment TEXT,
-  user_id INTEGER,
-  pub_type TEXT DEFAULT 'Documento',
-  meta TEXT,
-  deleted_at TEXT,
-  created_at TEXT NOT NULL
-);
-
--- Payments linked to legal requests (history)
+-- Payments linked to legal requests
 CREATE TABLE IF NOT EXISTS legal_payments (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  legal_request_id INTEGER NOT NULL,
-  ref TEXT,
-  date TEXT NOT NULL,
-  bank TEXT,
-  type TEXT,
-  amount_bs REAL NOT NULL,
-  status TEXT,
-  mobile_phone TEXT,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  legal_request_id INT NOT NULL,
+  ref VARCHAR(100),
+  date DATE NOT NULL,
+  bank VARCHAR(100),
+  type VARCHAR(50),
+  amount_bs DECIMAL(15,2) NOT NULL,
+  status VARCHAR(50),
+  mobile_phone VARCHAR(50),
   comment TEXT,
-  created_at TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
   FOREIGN KEY(legal_request_id) REFERENCES legal_requests(id) ON DELETE CASCADE
 );
-CREATE INDEX IF NOT EXISTS idx_legal_payments_req ON legal_payments(legal_request_id);
 
--- Files linked to legal requests (attachments)
+-- Files linked to legal requests
 CREATE TABLE IF NOT EXISTS legal_files (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  legal_request_id INTEGER NOT NULL,
-  kind TEXT NOT NULL,
-  file_id INTEGER NOT NULL,
-  created_at TEXT NOT NULL,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  legal_request_id INT NOT NULL,
+  kind VARCHAR(50) NOT NULL,
+  file_id INT NOT NULL,
+  created_at DATETIME NOT NULL,
   FOREIGN KEY(legal_request_id) REFERENCES legal_requests(id) ON DELETE CASCADE,
   FOREIGN KEY(file_id) REFERENCES files(id) ON DELETE CASCADE
 );
-CREATE INDEX IF NOT EXISTS idx_legal_files_req ON legal_files(legal_request_id);
 
 -- Directory Legal profiles
 CREATE TABLE IF NOT EXISTS directory_profiles (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
-  full_name TEXT NOT NULL,
-  email TEXT,
-  phones TEXT,
-  state TEXT,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  full_name VARCHAR(255) NOT NULL,
+  email VARCHAR(255),
+  phones VARCHAR(255),
+  state VARCHAR(100),
   areas TEXT,
-  colegio TEXT,
+  colegio VARCHAR(100),
   socials TEXT,
-  inpre_photo_file_id INTEGER,
-  profile_photo_file_id INTEGER,
-  status TEXT DEFAULT 'pendiente',
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL,
-  FOREIGN KEY(user_id) REFERENCES users(id)
+  inpre_photo_file_id INT,
+  profile_photo_file_id INT,
+  status VARCHAR(50) DEFAULT 'pendiente',
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Directory reference data: areas and colleges
 CREATE TABLE IF NOT EXISTS directory_areas (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL UNIQUE,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL
 );
+
 CREATE TABLE IF NOT EXISTS directory_colleges (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL UNIQUE,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL
 );
 
 -- Publications
 CREATE TABLE IF NOT EXISTS publications (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  slug TEXT NOT NULL UNIQUE,
-  title TEXT NOT NULL,
-  content TEXT,
-  status TEXT NOT NULL DEFAULT 'published',
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  slug VARCHAR(255) NOT NULL UNIQUE,
+  title VARCHAR(255) NOT NULL,
+  content LONGTEXT,
+  status VARCHAR(50) NOT NULL DEFAULT 'published',
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL
 );
 
--- CMS Pages (editable header/body/footer + block-based body)
+-- CMS Pages
 CREATE TABLE IF NOT EXISTS pages (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  slug TEXT NOT NULL UNIQUE,
-  title TEXT NOT NULL,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  slug VARCHAR(255) NOT NULL UNIQUE,
+  title VARCHAR(255) NOT NULL,
   header_html TEXT,
-  body_json TEXT, -- JSON array of blocks
+  body_json LONGTEXT,
   footer_html TEXT,
-  status TEXT NOT NULL DEFAULT 'published',
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  status VARCHAR(50) NOT NULL DEFAULT 'published',
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL
 );
 
--- Key-value settings
+-- Settings
 CREATE TABLE IF NOT EXISTS settings (
-  key TEXT PRIMARY KEY,
+  `key` VARCHAR(100) PRIMARY KEY,
   value TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  updated_at DATETIME NOT NULL
 );
 
--- Seed defaults (idempotent)
-INSERT OR IGNORE INTO settings(key,value,updated_at) VALUES
- ('bcv_rate','203.74',strftime('%Y-%m-%dT%H:%M:%SZ','now')),
- ('price_per_folio_usd','1.50',strftime('%Y-%m-%dT%H:%M:%SZ','now')),
- ('convocatoria_usd','10.00',strftime('%Y-%m-%dT%H:%M:%SZ','now')),
- ('iva_percent','16',strftime('%Y-%m-%dT%H:%M:%SZ','now')),
- ('raptor_mini_preview_enabled','1',strftime('%Y-%m-%dT%H:%M:%SZ','now'));
+-- Seed defaults
+INSERT IGNORE INTO settings(`key`,value,updated_at) VALUES
+ ('bcv_rate','203.74',NOW()),
+ ('price_per_folio_usd','1.50',NOW()),
+ ('convocatoria_usd','10.00',NOW()),
+ ('iva_percent','16',NOW()),
+ ('raptor_mini_preview_enabled','1',NOW());
+
+SET FOREIGN_KEY_CHECKS=1;

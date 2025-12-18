@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Configurar e instalar extensiones PHP
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd zip mbstring pdo pdo_sqlite opcache
+    && docker-php-ext-install -j$(nproc) gd zip mbstring pdo pdo_mysql pdo_sqlite opcache
 
 # Instalar wkhtmltopdf desde el paquete oficial de Ubuntu Jammy
 # Jammy (Ubuntu 22.04) es compatible con Debian Bookworm
