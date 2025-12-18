@@ -5,7 +5,8 @@ require_once __DIR__.'/Database.php';
 class SettingsController {
   public function get(){
     $pdo = Database::pdo();
-    $rows = $pdo->query('SELECT key, value FROM settings')->fetchAll(PDO::FETCH_KEY_PAIR);
+    // Escape 'key' for MySQL compatibility
+    $rows = $pdo->query('SELECT `key`, value FROM settings')->fetchAll(PDO::FETCH_KEY_PAIR);
     // Cast numeric values where applicable
     $out = [];
     foreach ($rows as $k=>$v) {
@@ -22,7 +23,9 @@ class SettingsController {
     $pdo = Database::pdo();
     $in = json_decode(file_get_contents('php://input'), true) ?: [];
     $now = gmdate('c');
-    $stmt = $pdo->prepare('INSERT INTO settings(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at');
+    // Use REPLACE INTO for compatibility (MySQL uses ON DUPLICATE KEY UPDATE, SQLite uses ON CONFLICT)
+    // Also escape 'key'
+    $stmt = $pdo->prepare('REPLACE INTO settings(`key`,value,updated_at) VALUES(?,?,?)');
     foreach ($in as $k=>$v) {
       $stmt->execute([$k, (string)$v, $now]);
     }

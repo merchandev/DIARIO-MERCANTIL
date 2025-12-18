@@ -5,15 +5,14 @@ require_once __DIR__.'/BcvScraper.php';
 
 class RateController {
   private function getSetting(PDO $pdo, string $key): ?string {
-    $stmt = $pdo->prepare('SELECT value FROM settings WHERE key=?');
+    $stmt = $pdo->prepare('SELECT value FROM settings WHERE `key`=?');
     $stmt->execute([$key]);
     $v = $stmt->fetchColumn();
     return $v === false ? null : (string)$v;
   }
   private function setSetting(PDO $pdo, string $key, string $value): void {
     $now = gmdate('c');
-    $stmt = $pdo->prepare('INSERT INTO settings(key,value,updated_at) VALUES(?,?,?)
-      ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at');
+    $stmt = $pdo->prepare('REPLACE INTO settings(`key`,value,updated_at) VALUES(?,?,?)');
     $stmt->execute([$key,$value,$now]);
   }
 
